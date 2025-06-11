@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+
+{% block title %}OnlineMiami: Manage {{ room.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="retro-panel">
+        <h1 class="retro-title">>_ ROOM OPERATIONS: <span class="room-name">{{ room.name|upper }}</span></h1>
+        
+        <!-- Current Members Section -->
+        <div class="retro-section">
+            <div class="section-header">
+                <i class="fas fa-users-cog"></i>
+                <h3>ACTIVE OPERATORS</h3>
+            </div>
+            <div class="retro-list" id="members-list">
+                {% for member in members %}
+                <div class="retro-list-item">
+                    <span class="user-badge">{{ member.username }}</span>
+                    {% if room.created_by == request.user and member != request.user %}
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ member.id }}">
+                        <button type="submit" name="remove_user" class="retro-btn danger">
+                            <i class="fas fa-user-slash"></i> DEACTIVATE
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Add Member Section -->
+        <div class="retro-section">
+            <div class="section-header">
+                <i class="fas fa-user-plus"></i>
+                <h3>INITIATE TRANSMISSION</h3>
+            </div>
+            <form method="post" id="add-user-form" class="retro-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username-input" class="retro-label">
+                        <i class="fas fa-terminal"></i> OPERATOR ID
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" class="retro-input" id="username-input" 
+                               name="username" placeholder="ENTER OPERATOR ID" required>
+                        <button type="submit" name="add_user" class="retro-btn primary">
+                            <i class="fas fa-paper-plane"></i> SEND
+                        </button>
+                    </div>
+                    <div id="username-suggestions" class="suggestions-dropdown"></div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Pending Invitations Section -->
+        <div class="retro-section">
+            <div class="section-header">
+                <i class="fas fa-clock"></i>
+                <h3>PENDING TRANSMISSIONS</h3>
+            </div>
+            {% if invitations %}
+            <div class="retro-list">
+                {% for inv in invitations %}
+                <div class="retro-list-item">
+                    <span class="user-badge">{{ inv.recipient.username }}</span>
+                    <span class="status-badge pending">AWAITING RESPONSE</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="retro-empty">
+                <i class="fas fa-inbox"></i>
+                <p>NO PENDING TRANSMISSIONS</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Action Panel -->
+        <div class="action-panel">
+            <a href="{% url 'room_detail' room.id %}" class="retro-btn secondary">
+                <i class="fas fa-arrow-left"></i> RETURN TO CHANNEL
+            </a>
+            {% if room.created_by == request.user %}
+            <button id="deleteRoomBtn" class="retro-btn danger">
+                <i class="fas fa-trash"></i> TERMINATE CHANNEL
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Room Modal -->
+<div id="customModal" class="custom-modal">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h2 class="neon-text">CONFIRM TERMINATION</h2>
+            <span class="custom-close-btn">&times;</span>
+        </div>
+        <div class="custom-modal-body">
+            <p>WARNING: This action will permanently delete the channel and all associated data.</p>
+            <p>Confirm termination of channel <strong>{{ room.name }}</strong>?</p>
+        </div>
+        <div class="custom-modal-footer">
+            <form method="post" action="{% url 'delete_room' room.id %}">
+                {% csrf_token %}
+                <button type="button" id="cancelDeleteBtn" class="retro-btn secondary">
+                    <i class="fas fa-times"></i> ABORT
+                </button>
+                <button type="submit" class="retro-btn danger">
+                    <i class="fas fa-check"></i> CONFIRM
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Main Panel Styles */
+    .retro-panel {
+        background: rgba(13, 2, 33, 0.9);
+        border: 1px solid #05d9e8;
+        box-shadow: 0 0 20px rgba(5, 217, 232, 0.3);
+        padding: 30px;
+        border-radius: 0;
+        margin-top: 20px;
+    }
+    
+    .retro-title {
+        color: #05d9e8;
+        font-family: 'Courier New', monospace;
+        font-size: 1.8rem;
+        margin-bottom: 30px;
+        text-shadow: 0 0 5px #05d9e8;
+        border-bottom: 1px solid #ff2a6d;
+        padding-bottom: 10px;
+    }
+    
+    .room-name {
+        color: #ff2a6d;
+        text-shadow: 0 0 5px #ff2a6d;
+    }
+    
+    /* Section Styles */
+    .retro-section {
+        background: rgba(26, 9, 51, 0.5);
+        border: 1px solid #d300c5;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(5, 217, 232, 0.3);
+    }
+    
+    .section-header i {
+        color: #05d9e8;
+        margin-right: 10px;
+        font-size: 1.2rem;
+    }
+    
+    .section-header h3 {
+        color: #ff2a6d;
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 1px;
+    }
+    
+    /* List Styles */
+    .retro-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .retro-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: rgba(5, 217, 232, 0.1);
+        border-left: 3px solid #05d9e8;
+    }
+    
+    .user-badge {
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+    
+    .status-badge {
+        padding: 5px 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        border-radius: 0;
+    }
+    
+    .status-badge.pending {
+        background: rgba(255, 165, 0, 0.2);
+        border: 1px solid orange;
+        color: orange;
+    }
+    
+    /* Form Styles */
+    .retro-form {
+        margin-top: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 0;
+    }
+    
+    .retro-label {
+        display: block;
+        color: #05d9e8;
+        margin-bottom: 8px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .input-wrapper {
+        display: flex;
+    }
+    
+    .retro-input {
+        flex: 1;
+        padding: 10px 15px;
+        background: rgba(5, 217, 232, 0.1);
+        border: 1px solid #05d9e8;
+        color: white;
+        font-family: 'Courier New', monospace;
+        border-radius: 0;
+    }
+    
+    .retro-input:focus {
+        outline: none;
+        box-shadow: 0 0 10px #05d9e8;
+    }
+    
+    /* Button Styles */
+    .retro-btn {
+        padding: 10px 15px;
+        border: 1px solid;
+        font-family: 'Courier New', monospace;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 0;
+        text-transform: uppercase;
+    }
+    
+    .retro-btn i {
+        font-size: 0.9rem;
+    }
+    
+    .retro-btn.primary {
+        background: rgba(5, 217, 232, 0.2);
+        color: #05d9e8;
+        border-color: #05d9e8;
+    }
+    
+    .retro-btn.primary:hover {
+        background: #05d9e8;
+        color: #0d0221;
+        box-shadow: 0 0 15px #05d9e8;
+    }
+    
+    .retro-btn.danger {
+        background: rgba(255, 42, 109, 0.2);
+        color: #ff2a6d;
+        border-color: #ff2a6d;
+    }
+    
+    .retro-btn.danger:hover {
+        background: #ff2a6d;
+        color: white;
+        box-shadow: 0 0 15px #ff2a6d;
+    }
+    
+    .retro-btn.secondary {
+        background: rgba(211, 0, 197, 0.2);
+        color: #d300c5;
+        border-color: #d300c5;
+        text-decoration: none;
+    }
+    
+    .retro-btn.secondary:hover {
+        background: #d300c5;
+        color: white;
+        box-shadow: 0 0 15px #d300c5;
+    }
+    
+    /* Empty State */
+    .retro-empty {
+        text-align: center;
+        padding: 20px;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: 'Courier New', monospace;
+    }
+    
+    .retro-empty i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: rgba(5, 217, 232, 0.5);
+    }
+    
+    /* Action Panel */
+    .action-panel {
+        margin-top: 30px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    /* Modal Styles */
+    .custom-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .custom-modal-content {
+        background: rgba(13, 2, 33, 0.95);
+        border: 1px solid #ff2a6d;
+        box-shadow: 0 0 30px rgba(255, 42, 109, 0.5);
+        margin: 10% auto;
+        padding: 25px;
+        width: 80%;
+        max-width: 500px;
+        animation: modalFadeIn 0.3s;
+    }
+    
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(-50px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .custom-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #05d9e8;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .custom-modal-body {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    
+    .custom-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        border-top: 1px solid #05d9e8;
+        padding-top: 15px;
+    }
+    
+    .custom-close-btn {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .custom-close-btn:hover {
+        color: #ff2a6d;
+    }
+    
+    .neon-text {
+        color: #05d9e8;
+        text-shadow: 0 0 5px #05d9e8;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // AJAX form submission
+    const addUserForm = document.getElementById('add-user-form');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            // Disable button during submission
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SENDING...';
+            
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                },
+                body: formData
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                }
+                throw new Error('Server returned invalid response');
+            })
+            .then(data => {
+                if (data.status && data.message) {
+                    showTempMessage(data.message, data.status);
+                    if (data.status === 'success') {
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showTempMessage('Transmission failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> SEND';
+            });
+        });
+    }
+    
+    // Modal functionality
+    const modal = document.getElementById("customModal");
+    const deleteBtn = document.getElementById("deleteRoomBtn");
+    const cancelBtn = document.getElementById("cancelDeleteBtn");
+    const closeBtn = document.querySelector(".custom-close-btn");
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+        });
+    }
+    
+    function closeModal() {
+        modal.style.display = "none";
+        document.body.style.overflow = "auto";
+    }
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Notification function
+    function showTempMessage(message, type) {
+        // Remove existing notifications
+        document.querySelectorAll('.retro-alert').forEach(el => el.remove());
+        
+        const alert = document.createElement('div');
+        alert.className = `retro-alert ${type}`;
+        alert.innerHTML = `
+            <span>${message}</span>
+            <button class="close-btn">&times;</button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            alert.classList.add('show');
+        }, 10);
+        
+        alert.querySelector('.close-btn').addEventListener('click', () => {
+            alert.remove();
+        });
+        
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+    
+});
+</script>
+{% endblock %}

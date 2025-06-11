@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Pending Invitations</h2>
+<ul>
+    {% for inv in invitations %}
+    <li>
+        Room: <b>{{ inv.room.name }}</b> from {{ inv.sender.username }}
+        <form method="post" action="{% url 'handle_invitation' inv.id %}">
+            {% csrf_token %}
+            <button name="action" value="accept">Accept</button>
+            <button name="action" value="decline">Decline</button>
+        </form>
+    </li>
+    {% empty %}
+    <li>No invitations.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

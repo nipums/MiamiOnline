@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Большой ЭЛТ-монитор в ретро-стиле -->
+            <div class="vintage-crt">
+                <!-- Лицевая панель монитора -->
+                <div class="crt-face">
+                    <!-- Выпуклый экран -->
+                    <div class="crt-screen">
+                        <!-- Стекло экрана с эффектом полос -->
+                        <div class="crt-glass">
+                            <!-- Анимированные горизонтальные полосы CRT -->
+                            <div class="crt-scanlines"></div>
+                            
+                            <!-- Внутреннее содержимое экрана -->
+                            <div class="crt-content">
+                                <!-- Заголовок профиля -->
+                                <div class="crt-header">
+                                    <h1 class="neon-title">>_ USER PROFILE: {{ request.user.username|upper }}</h1>
+                                    <div class="hr-neon"></div>
+                                </div>
+                                
+                                <!-- Форма профиля -->
+                                <form method="post" enctype="multipart/form-data" class="crt-profile-form">
+                                    {% csrf_token %}
+                                    
+                                    <!-- Блок с аватаром -->
+                                    <div class="crt-avatar-container">
+                                        <div class="crt-avatar-wrapper">
+                                            <img src="{{ profile.get_avatar_url }}" 
+                                                 class="crt-avatar" 
+                                                 alt="AVATAR"
+                                                 id="avatar-preview">
+                                            <label for="id_avatar" class="crt-avatar-upload">
+                                                <i class="fas fa-camera-retro"></i>
+                                                <span class="upload-text">UPLOAD</span>
+                                            </label>
+                                            <input type="file" name="avatar" id="id_avatar" accept="image/*" class="hidden-file-input">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Поля формы -->
+                                    <div class="crt-form-fields">
+                                        {% for field in form %}
+                                            {% if field.name != 'avatar' and field.name != 'clear' %}
+                                                <div class="mb-3">
+                                                    <label for="{{ field.id_for_label }}" class="form-label crt-label">
+                                                        <i class="fas fa-{% cycle 'user' 'envelope' 'globe' %}"></i> 
+                                                        {{ field.label|upper }}
+                                                    </label>
+                                                    {% if field.name == 'bio' %}
+                                                        <textarea name="{{ field.name }}" id="{{ field.id_for_label }}" 
+                                                              class="form-control fixed-textarea" 
+                                                              rows="5" cols="40" 
+                                                              style="resize: none">{{ field.value|default:'' }}</textarea>
+                                                    {% else %}
+                                                        {{ field }}
+                                                    {% endif %}
+                                                    {% if field.errors %}
+                                                        <div class="crt-error">{{ field.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <!-- Кнопка сохранения -->
+                                    <button type="submit" class="btn btn-neon-pink w-100">
+                                        <i class="fas fa-save"></i> SAVE PROFILE
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Панель управления монитора -->
+                    <div class="crt-controls">
+                        <div class="crt-knob power-knob">
+                            <div class="knob-mark"></div>
+                        </div>
+                        <div class="crt-knob brightness-knob">
+                            <div class="knob-mark"></div>
+                        </div>
+                        <div class="crt-knob contrast-knob">
+                            <div class="knob-mark"></div>
+                        </div>
+                        <div class="crt-brand">MiamiSystems</div>
+                    </div>
+                </div>
+                
+                <!-- Корпус монитора с объемом -->
+                <div class="crt-body">
+                    <div class="crt-neck"></div>
+                    <div class="crt-base">
+                        <div class="crt-tilt"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Основные стили для винтажного ЭЛТ-монитора */
+    .vintage-crt {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        margin: 50px auto;
+        perspective: 1000px;
+    }
+    
+    .crt-face {
+        background: #002745;
+        border: 15px solid #010927;
+        box-shadow: 
+            inset 0 0 0 5px #003c45,
+            0 10px 30px rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        position: relative;
+        transform-style: preserve-3d;
+    }
+    
+    .crt-screen {
+        background: #000;
+        border: 3px solid #010927;
+        padding: 2px;
+        position: relative;
+        box-shadow: 
+            inset 0 0 30px rgba(0, 0, 0, 0.8),
+            0 0 0 2px #555;
+        transform: translateZ(10px);
+    }
+    
+    /* Выпуклый эффект экрана */
+    .crt-screen::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, rgba(5, 217, 232, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    
+    .crt-glass {
+        background: rgba(13, 2, 33, 0.95);
+        padding: 30px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #333;
+    }
+    
+    /* Анимированные горизонтальные полосы CRT */
+    .crt-scanlines {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(5, 217, 232, 0.15) 1px,
+            transparent 3px,
+            transparent 100%
+        );
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 1;
+        animation: scanlines 1.5s linear infinite;
+    }
+    
+    @keyframes scanlines {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 0 4px;
+        }
+    }
+    
+    /* Эффект свечения между полосами */
+    .crt-glass::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(5, 217, 232, 0.08) 0%,
+            transparent 1px,
+            transparent 3px,
+            rgba(5, 217, 232, 0.08) 4px
+        );
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 1;
+        mix-blend-mode: screen;
+        animation: scanlines-glow 1.5s linear infinite;
+    }
+    
+    @keyframes scanlines-glow {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 0 4px;
+        }
+    }
+    
+    /* Блики на стекле */
+    .crt-glass::after {
+        content: '';
+        position: absolute;
+        top: 10%;
+        left: 10%;
+        width: 30%;
+        height: 20%;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            rgba(255, 255, 255, 0) 60%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    
+    /* Корпус монитора */
+    .crt-body {
+        position: relative;
+        height: 120px;
+    }
+    
+    .crt-neck {
+        width: 70%;
+        height: 80px;
+        background: linear-gradient(to bottom, #002745, #010927);
+        margin: 0 auto;
+        border-left: 5px solid #000;
+        border-right: 5px solid #000;
+    }
+    
+    .crt-base {
+        width: 100%;
+        height: 40px;
+        background: #010927;
+        position: relative;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    .crt-tilt {
+        width: 180px;
+        height: 15px;
+        background: #0a0a0a;
+        margin: 0 auto;
+        position: relative;
+        top: -10px;
+        box-shadow: 
+            inset 0 0 10px #000,
+            0 5px 15px rgba(0, 0, 0, 0.8);
+    }
+    
+    /* Панель управления с ручками */
+    .crt-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 10px 20px;
+        background: #010927;
+        margin-top: 15px;
+        border-top: 3px solid #000;
+    }
+    
+    .crt-knob {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: radial-gradient(circle at center, #002745, #010927);
+        border: 2px solid #000;
+        margin: 0 10px;
+        position: relative;
+        box-shadow: 
+            inset 0 0 10px rgba(0, 0, 0, 0.8),
+            0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+    
+    .knob-mark {
+        position: absolute;
+        top: 3px;
+        left: 50%;
+        width: 3px;
+        height: 10px;
+        background: #13c8ff;
+        transform: translateX(-50%);
+    }
+    
+    .power-knob {
+        background: radial-gradient(circle at center, #d00, #800);
+    }
+    
+    .crt-brand {
+        color: #13c8ff;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.7rem;
+        margin-right: auto;
+        text-shadow: 1px 1px 1px #000;
+    }
+    
+    /* Стили для формы */
+    .crt-content {
+        position: relative;
+        z-index: 2; /* Выше полос */
+    }
+    
+    .crt-avatar-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+    
+    .crt-avatar-wrapper {
+        position: relative;
+        width: 150px;
+        height: 150px;
+    }
+    
+    .crt-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 2px solid var(--neon-blue);
+        box-shadow: 0 0 15px var(--neon-blue);
+        transition: all 0.3s;
+        background: #000;
+    }
+    
+    .crt-avatar:hover {
+        box-shadow: 0 0 25px var(--neon-pink);
+        border-color: var(--neon-pink);
+    }
+    
+    .crt-avatar-upload {
+        position: absolute;
+        bottom: -40px;
+        right: 0px;
+        background: var(--deep-purple);
+        border: 1px solid var(--neon-blue);
+        color: var(--neon-blue);
+        width: 60px;
+        height: 30px;
+        border-radius: 0px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.7rem;
+        gap: 5px;
+    }
+    
+    .upload-text {
+        display: inline-block;
+    }
+    
+    .crt-avatar-upload:hover {
+        background: var(--neon-blue);
+        color: var(--dark-blue);
+        transform: scale(1.05);
+    }
+    
+    .hidden-file-input {
+        display: none;
+    }
+    
+    .fixed-textarea {
+        resize: none !important;
+    }
+    
+    .crt-label {
+        color: var(--neon-blue);
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        display: block;
+        text-shadow: 0 0 3px var(--neon-blue);
+    }
+    
+    .crt-form-fields input,
+    .crt-form-fields textarea,
+    .crt-form-fields select {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--neon-blue);
+        color: white;
+        font-family: 'Roboto Mono', monospace;
+        outline: none;
+        margin-bottom: 5px;
+        box-shadow: inset 0 0 10px rgba(5, 217, 232, 0.1);
+    }
+    
+    .crt-form-fields input:focus,
+    .crt-form-fields textarea:focus,
+    .crt-form-fields select:focus {
+        box-shadow: 
+            inset 0 0 10px rgba(5, 217, 232, 0.3),
+            0 0 10px var(--neon-blue);
+    }
+    
+    .crt-error {
+        color: var(--neon-pink);
+        font-size: 0.8rem;
+        margin-top: 5px;
+        text-shadow: 0 0 3px var(--neon-pink);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка загрузки аватара
+    const avatarInput = document.getElementById('id_avatar');
+    const avatarPreview = document.getElementById('avatar-preview');
+    
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    avatarPreview.src = e.target.result;
+                    avatarPreview.style.borderColor = 'var(--neon-pink)';
+                    setTimeout(() => {
+                        avatarPreview.style.borderColor = 'var(--neon-blue)';
+                    }, 1000);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Легкий эффект дрожания изображения (опционально)
+    const crtContent = document.querySelector('.crt-content');
+    setInterval(() => {
+        if (Math.random() > 0.98) {
+            const x = (Math.random() - 0.5) * 2;
+            const y = (Math.random() - 0.5) * 2;
+            crtContent.style.transform = `translate(${x}px, ${y}px)`;
+            setTimeout(() => {
+                crtContent.style.transform = 'translate(0, 0)';
+            }, 50);
+        }
+    }, 10000);
+});
+</script>
+{% endblock %}

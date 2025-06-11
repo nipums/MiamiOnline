@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Подтверждение регистрации</title>
+</head>
+<body>
+    <h2>Добро пожаловать, {{ user.username }}!</h2>
+    <p>Для завершения регистрации перейдите по ссылке:</p>
+    <p>
+        <a href="http://{{ domain }}{% url 'activate_account' uidb64=uid token=token %}">
+            Подтвердить регистрацию
+        </a>
+    </p>
+</body>
+</html>
